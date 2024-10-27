@@ -1,6 +1,9 @@
+#Use Python 3.12.4
 #Imports
 import json
 import math
+import os
+import ollama
 from datetime import date
 from datetime import datetime
 is_registered = False
@@ -18,12 +21,13 @@ def save_user_data(users):
         json.dump(users, f, indent=4)
 
 #Needed Stuff
-USER_DATA_FILE = 'users.json'
+USER_DATA_FILE = os.path.expanduser('~/users.json')
 current_time = datetime.now().time()
 current_date = date.today()
 weekend_days = {5, 6}
 holidays = []
 tasks = []
+notes = []
 users = load_user_data()
 def is_school_day(date):
     day_of_week = date.weekday()
@@ -84,67 +88,177 @@ if is_registered == True:
     while True:
         print("\n" * 1)
         print(" == Main Menu == ")
-        print("1. Add Tasks")
-        print("2. List Tasks")
-        print("3. Remove Tasks")
+        print("1. Chat with LLM")
+        print("2. Tasks")
+        print("3. Notes")
         print("4. Date")
         print("5. Calculator")
         print("6. Settings")
         print("7. Exit")
-        menu = input("So what would you like to do today? ")
-        if menu == "Add Tasks" or menu == "1":
-            def add_task():
+        menu = input("So what would you like to do today? ").strip().upper()
+        if menu == "Chat with LLM" or menu == "1":
+            def ask_llm():
+                model_to_use = input("\nWhat LLM would you like to use? \n(mistral-nemo, gemma2, llama3.1, qwen2.5, dolpin-llama3, etc...) \nMust be perfect spelling! ")
                 while True:
-                    task = input("What is 1 task you would like to finish today? (Say \"None\" for no task) ")
-                    if task == "None":
-                        print("No tasks added.")
+                    prompt = input("\nWhat is your question to the AI? (To end \"q\", To change model \"c\") ")
+                    if prompt == "q":
                         break
-                    tasks.append(task)
-                    print(f"Task '{task}' added.")
-                    another_task = input("Would you like to add another task? (Y/N): ").strip().upper()
-                    if another_task == "N":
-                        break
-                    elif another_task != "Y":
-                        print("Error: Please enter 'Y' or 'N'.")
-            add_task()
-        elif menu == "List Tasks" or menu == "2":
-            def list_tasks():
-                print("Your tasks for today:")
-                for task in tasks:
-                    print(f"- {task}")
-            list_tasks()
-        elif menu == "Remove Tasks" or menu == "3":
-            def remove_tasks():
-                while True:
-                    removing_a_task = input("Would you like to remove a task? (Y/N): ")
-                    if removing_a_task == "Y":
-                        if tasks:
-                            print("Here are your tasks:")
-                            for i, task in enumerate(tasks, 1):
-                                print(f"{i}. {task}")
-                            try:
-                                which_task_will_be_removed = int(input("Which task would you like to remove? (By number; 1, 2, 3, etc...) "))
+                    elif prompt == "c":
+                        ask_llm()
+                    response = ollama.chat(model=model_to_use, messages=[{'role': 'user', 'content': prompt}])
+                    print('\n')
+                    print(response['message']['content'].strip())
+                    print('\n')
+            ask_llm()
+        elif menu == "Tasks" or menu == "2":
+            def all_tasks():
+                print("\n" * 1)
+                print(" == Tasks Menu == ")
+                print("1. Add Task")
+                print("2. List Tasks")
+                print("3. Remove Tasks")
+                what_tasks = input("What would you like to do with your tasks? ")
+                if what_tasks == "1" or what_tasks == "Add Task":
+                    def add_task():
+                        while True:
+                            global task
+                            task = input("What is 1 task you would like to finish today? ")
+                            task_priority = input("What is the priority level? (High/Medium?Low) ").capitalize()
+                            if task_priority not in ['High', 'Medium', 'Low']:
+                                print("That's not a priority level!")
+                                return
+                            tasks.append({"task": task, "priority": task_priority})
+                            print(f"Task {task} with task priority {task_priority} added")
+                            another_task = input("Would you like to add another task? (Y/N): ").strip().upper()
+                            if another_task == "N":
+                                break
+                            elif another_task != "Y":
+                                print("Error: Please enter 'Y' or 'N'.")
+                    add_task()
+                elif what_tasks == "List Tasks" or what_tasks == "2":
+                    def list_tasks():
+                        print("Your tasks for today:")
+                        sorted_tasks = sorted(tasks, key=lambda x: x["priority"], reverse=True)
+                        for idk, task in enumerate(sorted_tasks, 1):
+                            print(f"{idk}. {task['task']} (Priority: {task['priority']})")
+                    list_tasks()
+                elif what_tasks == "Remove Tasks" or what_tasks == "3":
+                    def remove_tasks():
+                        while True:
+                            if tasks:
+                                print("Here are your tasks:")
+                                for i, task in enumerate(tasks, 1):
+                                    print(f"{i}. {task}")
+                                try:
+                                    which_task_will_be_removed = int(input("Which task would you like to remove? "))
                     
-                                if 1 <= which_task_will_be_removed <= len(tasks):
-                                    removed_task = tasks.pop(which_task_will_be_removed - 1)
-                                    print(f"Task '{removed_task}' removed.")
-                                    users[client_username]['tasks'] = tasks
-                                    save_user_data(users)
+                                    if 1 <= which_task_will_be_removed <= len(tasks):
+                                        removed_task = tasks.pop(which_task_will_be_removed - 1)
+                                        print(f"Task '{removed_task}' removed.")
+                                        users[client_username]['tasks'] = tasks
+                                        save_user_data(users)
+                                    else:
+                                        print("Invalid task number.")
+                                except ValueError:
+                                    print("Please enter a valid number.")
                                 else:
-                                    print("Invalid task number.")
-                            except ValueError:
-                                print("Please enter a valid number.")
-                        else:
-                            print("No tasks to remove.")
-                            break
-                    elif removing_a_task == "N":
-                      break
+                                    print("No tasks to remove.")
+                                    break
+                    remove_tasks()
+            all_tasks()    
+        elif menu == "Notes" or menu == "3":
+            print("\n" * 2)
+            print(" == Notes Menu == ")
+            print("1. Write a Note")
+            print("2. View a Note")
+            print("3. Edit a Note")
+            print("4. Remove a Note")
+            notes_menu = input("What would you like to do with your notes? ").upper().strip()
+            if notes_menu == "Write a Note" or notes_menu == "1":
+                def make_note():
+                    global note_title
+                    global note
+                    note_title = input("What is the title of your new note? ")
+                    note_content = input("Enter the Note: ")
+                    users = load_user_data()
+                    user_notes = users.get(client_username, {}).get("notes", [])
+                    note = {
+                            "title": note_title,
+                            "content": note_content,
+                    }
+                    user_notes.append({"note": note, "title": note_title})
+                    users[client_username]["notes"] = user_notes
+                    save_user_data(users)
+                    print(f"Note {note_title} saved successfully!")
+                make_note()   
+            elif notes_menu == "View a Note" or notes_menu == "2":
+                def list_notes():
+                    global notes
+                    global note_title
+                    user_notes = users.get(client_username, {}).get("notes", [])
+                    if user_notes:
+                        print("Your notes:")
+                        for idk, note in enumerate(user_notes, 1):
+                            print(f"{idk}. {note['title']}")
                     else:
-                        print("Error: Please enter 'Y' or 'N'.")
-            remove_tasks()
+                        print("No Notes Found")
+                list_notes()
+            elif notes_menu == "Edit a Note" or notes_menu == "3":
+                def edit_note():
+                    user_notes = users.get(client_username, {}).get("notes", [])
+                    if user_notes:
+                        print("Here are your notes:")
+                        for i, note in enumerate(user_notes, 1):
+                            print(f"{i}. {note['title']}")
+
+                    try:
+                        note_to_edit = int(input("Which note would you like to edit? "))
+                        if 1 <= note_to_edit <= len(user_notes):
+                            selected_note = user_notes[note_to_edit - 1]
+                            new_title = input(f"New title (leave blank to keep '{selected_note['title']}'): ")
+                            new_content = input(f"New content (leave blank to keep current content): ")
+                            if new_title:
+                                selected_note['title'] = new_title
+                            if new_content:
+                                selected_note['content'] = new_content
+
+                            users[client_username]['notes'] = user_notes
+                            save_user_data(users)
+                            print("Note updated successfully!")
+                        else:
+                            print("Invalid note number.")
+                    except ValueError:
+                        print("Please enter a valid number.")
+                    else:
+                        print("No Notes to Edit")
+                edit_note()
+            elif notes_menu == "Remove a Note" or notes_menu == "4":
+                def remove_note():
+                            user_notes = users.get(client_username, {}).get("notes", [])
+                            if user_notes:
+                                print("Here are your notes:")
+                                for i, note in enumerate(user_notes, 1):
+                                    print(f"{i}. {note['title']}")
+                                try:
+                                    note_to_remove = int(input("Which note would you like to remove? "))
+                                    if 1 <= note_to_remove <= len(user_notes):
+                                        removed_note = user_notes.pop(note_to_remove - 1)  
+                                        print(f"Note '{removed_note['title']}' removed.")
+                                        users[client_username]['notes'] = user_notes 
+                                        save_user_data(users)  
+                                    else:
+                                        print("Invalid note number.")
+                                except ValueError:
+                                    print("Please enter a valid number.")
+                            else:
+                                print("No Notes to Remove")
+                remove_note()
+            else:
+                print("Not a Valid Option!")
         elif menu == "Date" or menu == "4":
             def time_variable():
                 global time_variable
+                global client_job
                 if USER_DATA_FILE[-1] == "Student":
                     if is_school_day(current_date) == True and current_time > school_end:
                         input(f"Today is, {current_date} which is a school day. So how was your school day today? ")
@@ -171,10 +285,11 @@ if is_registered == True:
         elif menu == "Calculator" or menu == "5":
             def calculator():
                 while True:
-                    print("\n--- Advanced Calculator ---")
+                    print("\n" * 2)
+                    print("--- Advanced Calculator ---")
                     try:
-                        x = input("Enter the first number (or type 'exit' to quit): ")
-                        if x.lower() == "exit":
+                        x = input("Enter the first number (or type 'q' to quit): ")
+                        if x.lower() == "q":
                             break
                         x = float(x)
                         y = input("Enter the second number: ")
@@ -220,8 +335,8 @@ if is_registered == True:
                         print(f"An error occurred: {e}. Please try again.")
             calculator()
         elif menu == "Settings" or menu == "6":
-            while True:
-                def settings_menu():
+            def settings_menu():
+                while True:
                     print("\n" * 2)
                     print(" == Settings Menu == ")
                     print("1. Change Password")
@@ -256,10 +371,11 @@ if is_registered == True:
                 settings_menu()
 
         elif menu == "Exit" or menu == "7":
-            print(f"\n","Goodbye {client_username}")
+            print(f"Goodbye {client_username}")
             break
         else:
             print("That is not valid. Put a valid option!")
 
     users[client_username]['tasks'] = tasks
+    users[client_username]['notes'] = notes
     save_user_data(users)
