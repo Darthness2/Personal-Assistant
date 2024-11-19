@@ -106,13 +106,12 @@ current_date = date.today()
 weekend_days = {5, 6}
 holidays = []
 tasks = []
-openai.api_key = "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"
-weather_in_us = requests.request("GET", "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/Corona?unitGroup=us&key=DUXRNLX6Q84B3RXDD4G5FJFX5&contentType=json")
+openai.api_key = ""
 if weather_in_us.status_code!=200:
   print('Unexpected Status code: ', weather_in_us.status_code)
   sys.exit()
 jsonData_in_us = weather_in_us.json()
-weather_in_metric = requests.request("GET", "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/Corona?unitGroup=uk&key=DUXRNLX6Q84B3RXDD4G5FJFX5&contentType=json")
+weather_in_metric = requests.request("GET", "")
 if weather_in_us.status_code!=200:
   print('Unexpected Status code: ', weather_in_metric.status_code)
   sys.exit()
