@@ -2,4 +2,3 @@ Make sure to have Ollama, Openai, Requests, Selenium, bs4, and Icecream installe
 `python3 -m venv ~/my_envs                                                 
 python3 -m pip install ______
 source ~/my_envs/bin/activate`
-and make sure to have the correct python interpreter for you
