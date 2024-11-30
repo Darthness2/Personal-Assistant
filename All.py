@@ -4,7 +4,6 @@ import math
 import os
 import time
 import ollama
-import httpx
 import openai
 import requests
 from datetime import datetime
@@ -124,16 +123,33 @@ class Weather:
             jsondata_in_metric = weather_in_metric.json()
             return jsondata_in_metric
 
+class Unofficial:
+    @staticmethod
+    def add_stuff_to_class():
+        while True:
+            for index, class_ in enumerate(users[str(current_user)]['Other']['classes'], 1):
+                print(f'{index}. {class_}')
+            class_to_change = int(input('> '))
+            real_class_to_change = list(users[str(current_user)]['Other']['classes'])[class_to_change - 1]
+            teacher = input('> ')
+            description = input('> ')
+            agenda = input('> ')
+            users[str(current_user)]['Other']['classes'][real_class_to_change]['teacher'] = teacher
+            users[str(current_user)]['Other']['classes'][real_class_to_change]['description'] = description
+            users[str(current_user)]['Other']['classes'][real_class_to_change]['agenda'] = agenda
+            NeededFunctions.save_user_data(users)
+
 #Needed Stuff
-USER_DATA_FILE = os.path.expanduser('')
+USER_DATA_FILE = os.path.expanduser('/Users/meteteoman/My_Python/users.json')
 current_time = datetime.now().time()
 current_date = date.today()
 tasks = []
 openai.api_key = ""
 
 #Client Username, Password, and Registration
-client_username = input(NeededFunctions.colored_text("Username: ", 0, 255, 0))
+client_username = input(NeededFunctions.colored_text('Username: ', 0, 255, 0))
 client_password = input(NeededFunctions.colored_text("Password: ", 0, 255, 0))
+
 try:
     users = NeededFunctions.load_user_data()
 except json.decoder.JSONDecodeError:
@@ -146,7 +162,7 @@ current_user = next((k for k, v in users.items() if v["user_info"]["username"] =
 def login_or_register():
     if client_username in NeededFunctions.find_all_in_nested_dict(users, 'username') and client_password in NeededFunctions.find_all_in_nested_dict(users, 'password'):
         print("\n")
-        print(f"\nWelcome back", NeededFunctions.colored_text(users[str(current_user)]['user_info']['name'], 255, 215, 0).strip('{}').strip('\''))
+        print(f"\nWelcome back {NeededFunctions.colored_text(users[str(current_user)]['user_info']['name'], 255, 215, 0)}")
     else:
         registration = input("You have not made an account. Would you like to register? (Y/N) ").strip().upper()
         if registration == "Y":
@@ -155,7 +171,6 @@ def login_or_register():
                 client_job = input("What is your occupation? (If a student say \"Student\") ")
                 location = input('What city do you live in? ')
                 id_counter = max(map(int, users.keys()), default=0) + 1
-                current_user = next((k for k, v in users.items() if v.get("user_info", {}).get("username") == client_username and v.get("user_info", {}).get("password") == client_password), id_counter)
                 if current_user not in users:
                     users[str(current_user)] = {}
                 if 'user_info' not in users[str(current_user)]:
@@ -171,7 +186,6 @@ def login_or_register():
         elif registration == "N":
             print("Goodbye Then!")
             exit()
-current_user = next((k for k, v in users.items() if v["user_info"]["username"] == client_username), str(id_counter))
 
 #Main Menu Functionality
 def main():
@@ -189,58 +203,57 @@ def main():
             print("8. Exit")
             menu = input("> ").strip().upper()
             if menu == "Chat with LLM" or menu == "1":
-                try:
-                    def ask_llm():
-                        print("\n")
-                        new_ollama_list = ollama.list()['models']
-                        model_names = [model['name'].replace(":latest", ' ').strip() for model in new_ollama_list]
-                        if "ChatGPT" not in model_names:
-                            model_names.append("ChatGPT")
-                        print(' == LLMS == ')
-                        for index, name in enumerate(model_names, start=1):
-                            print(f"{NeededFunctions.colored_text(index, 255, 215, 0)}: {name}")
-                        model_to_use_index = input("\n> ")
-                        if model_to_use_index in model_names or model_to_use_index and 1 <= int(model_to_use_index) <= len(model_names):
-                            model_to_use = model_names[int(model_to_use_index) - 1]
-                            while True:
-                                prompt = input(NeededFunctions.colored_text(f"\n(\"Q\" to quit, \"C\" to change model) \n{client_username}: ", 255, 215, 0)).strip().upper()
-                                if prompt == "Q":
-                                    break
-                                elif prompt == "C":
-                                    ask_llm()
-                                if model_to_use == "ChatGPT":
-                                    try:
-                                        response = openai.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}], stream=True)
-                                        print('\n' * 2)
-                                        print(NeededFunctions.colored_text('A:', 0, 255, 0))
-                                        for chunk in response:
-                                            print(chunk['message']['content'], end='')
-                                    except openai.RateLimitError:
-                                        print("\nYou exceeded your current quota")
-                                        ask_llm()
-                                else:
-                                    response = ollama.chat(model=model_to_use, messages=[{'role': 'user', 'content': prompt}], stream=True)
-                                    print(NeededFunctions.colored_text('A:', 0, 255, 0))
-                                    for chunk in response:
-                                        print(chunk['message']['content'], end='')
-                                    print("\n")
-                        else:
-                            print("\n")
-                            print(NeededFunctions.colored_text("Please enter a valid model!", 255, 0, 0))
-                            ask_llm()
-                    ask_llm()
-                except httpx.ConnectError:
+                def ask_llm():
                     print("\n")
-                    print("Ollama is not open!")
+                    new_ollama_list = ollama.list()['models']
+                    model_names = [model['model'].replace(":latest", ' ').strip() for model in new_ollama_list]
+                    if "ChatGPT" not in model_names:
+                        model_names.append("ChatGPT")
+                    print(NeededFunctions.colored_text(' == LLMS == ', 30, 144, 255))
+                    for index, name in enumerate(model_names, start=1):
+                        print(f"{NeededFunctions.colored_text(index, 255, 215, 0)}: {name}")
+                    model_to_use_index = input("\n> ")
+                    if model_to_use_index in model_names or model_to_use_index and 1 <= int(model_to_use_index) <= len(model_names):
+                        model_to_use = model_names[int(model_to_use_index) - 1]
+                        while True:
+                            prompt = input(NeededFunctions.colored_text(f"\n(\"Q\" to quit, \"C\" to change model) \n{client_username}: ", 255, 215, 0)).strip().upper()
+                            if prompt == "Q":
+                                break
+                            elif prompt == "C":
+                                ask_llm()
+                            if model_to_use == "ChatGPT":
+                                try:
+                                    response = openai.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}])
+                                    print('\n' * 2)
+                                    print(NeededFunctions.colored_text('A:', 0, 255, 0))
+                                    print(response['ChatCompletion']['choices']['message']['content'])
+                                except openai.RateLimitError:
+                                    print("\nYou exceeded your current quota")
+                                    ask_llm()
+                            else:
+                                response = ollama.chat(model=model_to_use, messages=[{'role': 'user', 'content': prompt}], stream=True)
+                                print(NeededFunctions.colored_text('\nA:', 0, 255, 0))
+                                for chunk in response:
+                                    print(chunk['message']['content'], end='')
+                                print("\n")
+                    else:
+                        print("\n")
+                        print(NeededFunctions.colored_text("Please enter a valid model!", 255, 0, 0))
+                        ask_llm()
+                ask_llm()
             elif menu == "Daily Summary" or menu == "2":
+                for i in tqdm(range(3), desc='Weather API Loading', total=2, leave=False):
+                    us_weather = Weather().us_weather()
+                    metric_weather = Weather().metric_weather()
+                    tqdm.leave=False
                 if not Weather().us_weather() and NeededFunctions.is_it_a_work_day(current_date):
                     print(f"Today is {NeededFunctions.colored_text(current_date.strftime('%A, %B %d, %Y').lower(), 255, 215, 0)} which is a work day. \nThe temperature is currently unavailable \nYou have {NeededFunctions.colored_text(len(users[str(current_user)]['Other']['tasks']), 255, 215, 0)} tasks to complete")
                 elif not Weather().us_weather() and not NeededFunctions.is_it_a_work_day(current_date):
                     print(f"Today is {NeededFunctions.colored_text(current_date.strftime('%A, %B %d, %Y').lower(), 255, 215, 0)} which is an off day. \nThe temperature is currently unavailable \nYou have {NeededFunctions.colored_text(len(users[str(current_user)]['Other']['tasks']), 255, 215, 0)} tasks to complete")
                 if NeededFunctions.is_it_a_work_day(current_date):
-                    print(f"Today is {NeededFunctions.colored_text(current_date.strftime('%A, %B %d, %Y').lower(), 255, 215, 0)} which is a work day. The temperature right now is {NeededFunctions.colored_text(round(Weather().us_weather()['currentConditions']['temp'], 0), 255, 215, 0)} degrees.\nToday will reach a high of {NeededFunctions.colored_text(round(Weather().us_weather()['days'][0]['feelslikemax'], 0), 255, 215, 0)} and a low of {NeededFunctions.colored_text(round(Weather().us_weather()['days'][0]['feelslikemin'], 0), 255, 215, 0)} with {NeededFunctions.colored_text(Weather().us_weather()['days'][0]['description'].lower(), 255, 215, 0)}\nYou have {NeededFunctions.colored_text(len(users[str(current_user)]['Other']['tasks']), 255, 215, 0)} tasks to complete")
+                    print(f"Today is {NeededFunctions.colored_text(current_date.strftime('%A, %B %d, %Y').lower(), 255, 215, 0)} which is a work day. The temperature right now is {NeededFunctions.colored_text(us_weather['currentConditions']['temp'], 255, 215, 0)} degrees.\nToday will reach a high of {NeededFunctions.colored_text(us_weather['days'][0]['feelslikemax'], 255, 215, 0)} and a low of {NeededFunctions.colored_text(us_weather['days'][0]['feelslikemin'], 255, 215, 0)} with {NeededFunctions.colored_text(us_weather['days'][0]['description'].lower(), 255, 215, 0)}\nYou have {NeededFunctions.colored_text(len(users[str(current_user)]['Other']['tasks']), 255, 215, 0)} tasks to complete")
                 elif not NeededFunctions.is_it_a_work_day(current_date):
-                    print(f"Today is {NeededFunctions.colored_text(current_date.strftime('%A, %B %d, %Y').lower(), 255, 215, 0)} which is an off day. The temperature right now is {NeededFunctions.colored_text(round(Weather().us_weather()['currentConditions']['temp'], 0), 255, 215, 0)} degrees.\nToday will reach a high of {NeededFunctions.colored_text(round(Weather().us_weather()['days'][0]['feelslikemax'], 0), 255, 215, 0)} and a low of {NeededFunctions.colored_text(round(Weather().us_weather()['days'][0]['feelslikemin'], 0), 255, 215, 0)} with {NeededFunctions.colored_text(Weather().us_weather()['days'][0]['description'].lower(), 255, 215, 0)} \nYou have {NeededFunctions.colored_text(len(users[str(current_user)]['Other']['tasks']), 255, 215, 0)} tasks to complete")
+                    print(f"Today is {NeededFunctions.colored_text(current_date.strftime('%A, %B %d, %Y').lower(), 255, 215, 0)} which is an off day. The temperature right now is {NeededFunctions.colored_text(us_weather['currentConditions']['temp'], 255, 215, 0)} degrees.\nToday will reach a high of {NeededFunctions.colored_text(us_weather['days'][0]['feelslikemax'], 255, 215, 0)} and a low of {NeededFunctions.colored_text(us_weather['days'][0]['feelslikemin'], 255, 215, 0)} with {NeededFunctions.colored_text(us_weather['days'][0]['description'].lower(), 255, 215, 0)} \nYou have {NeededFunctions.colored_text(len(users[str(current_user)]['Other']['tasks']), 255, 215, 0)} tasks to complete")
                 list_out_tasks = input('Would you like me to list them out? (Y/N): ').strip().upper()
                 if list_out_tasks == 'Y':
                     print("\n == Tasks == ")
@@ -259,7 +272,8 @@ def main():
                         print("1. Add Grade")
                         print("2. View Grades")
                         print('3. Experimental Grades')
-                        print("4. Exit")
+                        print('4. Classes Overview')
+                        print("5. Exit")
                         grades_menu = input("> ").strip().upper()
                         if grades_menu == "1" or grades_menu == "Add Grade":
                             def add_grade():
@@ -329,7 +343,15 @@ def main():
                                 weight = input('Which weight category would you like to put it in? ')
                                 which_weight = list(users[str(current_user)]['Other']['classes'][which_classes]['weight_categories'])[int(weight) - 1]
                                 print(Grades().calculate_needed_grades(current_grades, wanted_grade, which_classes, which_weight))
-                        elif grades_menu == "4" or grades_menu == "Exit":
+                        elif grades_menu == "4" or grades_menu == "Classes Overview":
+                            print(' == Classes == ')
+                            for class_ in users[str(current_user)]['Other']['classes']:
+                                class_teacher = users[str(current_user)]['Other']['classes'][class_]['teacher']
+                                class_description = users[str(current_user)]['Other']['classes'][class_]['description']
+                                class_agenda = users[str(current_user)]['Other']['classes'][class_]['agenda']
+                                print(f'\n{NeededFunctions.colored_text(class_, 255, 215, 0)}. {class_teacher}: \nDescription: {class_description} \nUsual Agenda: {class_agenda}')
+                            NeededFunctions.wait(5)
+                        elif grades_menu == "5" or grades_menu == "Exit":
                             break
                         else:
                             print(NeededFunctions.colored_text("Please enter a valid class!", 255, 0, 0))
@@ -467,9 +489,11 @@ def main():
                         print("\n" * 2)
                         print(NeededFunctions.colored_text(" == Calculator == ", 30, 144, 255))
                         try:
-                            x = float(input("(\"Q\" to quit)\nX: "))
+                            x = input("(\"Q\" to quit)\nX: ")
                             if x == "q":
                                 break
+                            else:
+                                x = float(x)
                             y = float(input("Y: "))
                             operation = input("Choose an operation: 'add', 'subtract', 'multiply', 'divide', 'power', 'sqrt', 'log', 'sin', 'cos', 'tan': ")
                             if operation == "sqrt":
@@ -525,36 +549,15 @@ def main():
                             def change_user_details():
                                 print("\n")
                                 print(NeededFunctions.colored_text(" == User Details Menu == ", 30, 144, 255))
-                                print("1. Change Password")
-                                print("2. Change Occupation")
-                                print("3. Exit")
-                                change_user_details_input = input("So what would you like to do? ").strip().upper()
-                                if change_user_details_input == "1" or change_user_details_input == "Change Password":
-                                    def change_password():
-                                        new_password = input("What will be your new password?: ")
-                                        confirm_new_password = input("Confirm new password: ")
-                                        if new_password == confirm_new_password:
-                                            users[str(current_user)]['user_info']['password'] = new_password
-                                            NeededFunctions.save_user_data(users)
-                                            print("Your password has been updated successfully")
-                                        else:
-                                            print("Passwords do not match")
-                                    change_password()
-                                elif change_user_details_input == "2" or change_user_details_input == "Change Occupation":
-                                    def change_occupation():
-                                        new_occupation = input("What will be your new occupation?: ")
-                                        confirm_new_occupation = input("Confirm new occupation: ")
-                                        if new_occupation == confirm_new_occupation:
-                                            users[str(current_user)]['user_info']['job'] = new_occupation
-                                            NeededFunctions.save_user_data(users)
-                                            print("Your occupation has been updated successfully")
-                                        else:
-                                            print("Passwords do not match")
-                                    change_occupation()
-                                elif change_user_details_input == "3" or change_user_details_input == "Exit":
-                                    settings_menu()
-                                else:
-                                    print(NeededFunctions.colored_text("Please put a valid option!", 255, 0, 0))
+                                for index, stuff in enumerate(users[str(current_user)]['user_info'], 1):
+                                    print(f'{index}. {stuff}')
+                                change_user_details_input = int(input("> "))
+                                real_change_user_details_input = list(users[str(current_user)]['user_info'])[change_user_details_input - 1]
+                                print(f'Your current {real_change_user_details_input.keys()} is {real_change_user_details_input.values()}')
+                                change_to = input('> ')
+                                users[str(current_user)]['user_info'][real_change_user_details_input] = change_to
+                                NeededFunctions.save_user_data(users)
+                                print('Your settings have been changed')
                             change_user_details()
                         elif settings_menu_choice == "2" or settings_menu_choice == "LLM Stuff" :
                             def llm_menu():
@@ -603,15 +606,22 @@ def main():
                         elif settings_menu_choice == "3" or settings_menu_choice == "Classes Stuff":
                             print(NeededFunctions.colored_text("\n == Classes Stuff == ", 30, 144, 255))
                             print("1. Add a Class")
-                            print("2. Remove a Class")
-                            print("3. Exit")
+                            print('2. Edit a Class')
+                            print("3. Remove a Class")
+                            print("4. Exit")
                             classes_stuff_menu_input = input("> ").strip().upper()
                             if classes_stuff_menu_input == "1" or classes_stuff_menu_input == "Add a Class":
                                 class_name = input("Enter your class's name: ")
+                                teacher = input('What is your teacher\'s name? ')
+                                description = input(f'Enter a description of {class_name} ')
+                                agenda = input(f'What is the usual agenda for {class_name} ')
                                 if 'classes' not in users[str(current_user)]['Other']:
                                     users[str(current_user)]['Other']['classes'] = {}
                                 if class_name not in users[str(current_user)]['Other']['classes']:
                                     users[str(current_user)]['Other']['classes'][str(class_name)] = {}
+                                users[str(current_user)]['Other']['classes'][class_name]['teacher'] = teacher
+                                users[str(current_user)]['Other']['classes'][class_name]['description'] = description
+                                users[str(current_user)]['Other']['classes'][class_name]['agenda'] = agenda
                                 NeededFunctions.save_user_data(users)
                                 while True:
                                     category_name = input("Enter a weight category name: ").strip()
@@ -630,7 +640,48 @@ def main():
                                         break
                                     else:
                                         print(NeededFunctions.colored_text("Please put a valid option!", 255, 0, 0))
-                            elif classes_stuff_menu_input == "2" or classes_stuff_menu_input == "Remove a Class":
+                            elif classes_stuff_menu_input == '2' or classes_stuff_menu_input == 'Edit a Class':
+                                print(NeededFunctions.colored_text('\n == Classes == ', 30, 144, 255))
+                                for index, class_ in enumerate(users[str(current_user)]['Other']['classes'], 1):
+                                    print(f'{index}. {class_}')
+                                class_to_change = int(input('> '))
+                                real_class_to_change = list(users[str(current_user)]['Other']['classes'])[class_to_change - 1]
+                                print(NeededFunctions.colored_text('\n == Stuff == ', 30, 144, 255))
+                                for index, stuff in enumerate(users[str(current_user)]['Other']['classes'][real_class_to_change], 1):
+                                    print(f'{index}. {stuff.capitalize()}')
+                                what_to_change = int(input(f'> '))
+                                real_what_to_change = list(users[str(current_user)]['Other']['classes'][real_class_to_change])[what_to_change - 1]
+                                if real_what_to_change == 'weight_categories':
+                                    print(NeededFunctions.colored_text('\n == Weight Categories == ', 30, 144, 255))
+                                    for index, categories in enumerate(users[str(current_user)]['Other']['classes'][real_class_to_change][real_what_to_change], 1):
+                                        print(f'{index}. {categories}')
+                                    which_category_to_change = int(input('> '))
+                                    real_which_category_to_change = list(users[str(current_user)]['Other']['classes'][real_class_to_change][real_what_to_change])[which_category_to_change - 1]
+                                    old_category_name = real_which_category_to_change
+                                    old_category_weight = users[str(current_user)]['Other']['classes'][real_class_to_change][real_what_to_change][real_which_category_to_change]['weight']
+                                    print(NeededFunctions.colored_text('\n == Stuff == ', 30, 144, 255))
+                                    stuff_in_weight_categories = {'name': old_category_name, 'weight': old_category_weight}
+                                    for index, (stuff, stuff2) in enumerate(stuff_in_weight_categories.items(), 1):
+                                        print(f'{index}. {stuff.capitalize()}')
+                                    what_to_change_in_category = int(input('> '))
+                                    real_what_to_change_in_category = list(stuff_in_weight_categories.keys())[what_to_change_in_category - 1]
+                                    if real_what_to_change_in_category == 'name':
+                                        print(f'Your current {real_what_to_change_in_category} is {old_category_name}')
+                                        what_to_change_to = input('> ')
+                                        users[str(current_user)]['Other']['classes'][real_class_to_change][real_what_to_change][what_to_change_to] = users[str(current_user)]['Other']['classes'][real_class_to_change][real_what_to_change].pop(old_category_name)
+                                        print(f'The {real_what_to_change_in_category} has been changed to {what_to_change_to} successfully!')
+                                    elif real_what_to_change_in_category == 'weight':
+                                        print(f'Your current {real_what_to_change_in_category} is {old_category_weight}')
+                                        what_to_change_to = float(input('> '))
+                                        users[str(current_user)]['Other']['classes'][real_class_to_change][real_which_category_to_change][real_what_to_change_in_category] = what_to_change_to
+                                        print(f'The {real_what_to_change_in_category} has been changed to {what_to_change_to} successfully!')
+                                else:
+                                    print(f'\nYour current {real_what_to_change} is: \n{users[str(current_user)]['Other']['classes'][real_class_to_change][real_what_to_change]}')
+                                    what_to_change_to = input('> ')
+                                    users[str(current_user)]['Other']['classes'][real_class_to_change][real_what_to_change] = what_to_change_to
+                                    print(f'The {real_what_to_change} has been turned into {what_to_change_to}')
+                                NeededFunctions.save_user_data(users)
+                            elif classes_stuff_menu_input == "3" or classes_stuff_menu_input == "Remove a Class":
                                 print('\n == Classes == ')
                                 user_classes = users[str(current_user)]['Other']['classes']
                                 for index, classes in enumerate(user_classes.keys(), start=1):
@@ -643,7 +694,7 @@ def main():
                                     NeededFunctions.save_user_data(users)
                                 else:
                                     print("Invalid class number.")
-                            elif classes_stuff_menu_input == '3' or classes_stuff_menu_input == "Exit":
+                            elif classes_stuff_menu_input == '4' or classes_stuff_menu_input == "Exit":
                                 break
                             else:
                                 print(NeededFunctions.colored_text("Please put a valid option!", 255, 0, 0))
