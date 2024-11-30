@@ -2,7 +2,7 @@
 This Python script is designed to function as a personal assistant, offering a variety of utilities such as user management, grade calculation, task management, weather updates, and more. It integrates multiple APIs and libraries to achieve these functionalities.
 ### Requirements
 - Python 3.13
-- Libraries: `json`, `requests`, `datetime`, `tqdm`, `icecream`, `openai`, and custom library `ollama`.
+- Libraries: `json`, `requests`, `datetime`, and custom libraries `ollama`, `tqdm`, `icecream`,  and `openai`.
 
 ### Major Classes and Methods:
 1. **NeededFunctions**
@@ -22,7 +22,7 @@ This Python script is designed to function as a personal assistant, offering a v
     - `metric_weather()`: Fetches current weather data in metric units.
 
 4. **Unofficial**
-    - `add_stuff_to_class()`: Prompts the user to enter additional information about a class and updates the user data.
+    - Made just for things that might help developer with things associated in the `.json` file.
 
 ### Key Functionalities:
 - **User Management**: Allows login, registration, and user data management.
